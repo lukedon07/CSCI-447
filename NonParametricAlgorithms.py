@@ -8,3 +8,5 @@
 
 
 #when finding nearest neighbors use Minkowski's metric of the form
+
+
