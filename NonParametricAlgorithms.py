@@ -40,11 +40,11 @@ class Preprocessor:
         X_prime = X.copy()
 
         for col in self.numeric_cols:
-            min = self.min_values[col]
-            max = self.max_values[col]
+            min_val = self.min_values[col]
+            max_val = self.max_values[col]
 
-            if max != min:
-                X_prime[col] = (X_prime[col] - min) / (max - min)
+            if max_val != min_val:
+                X_prime[col] = (X_prime[col] - min_val) / (max_val - min_val)
             else:
                 X_prime[col] = 0
 
@@ -53,6 +53,36 @@ class Preprocessor:
     def fit_transform(self, X):# X_train = preprocessor.fit_transform(X_train)
         self.fit(X)
         return self.transform(X)
+
+
+
+class DistanceCalculator:
+    def __init__(self, numeric_cols, categorical_cols, p=2):
+        self.numeric_cols = numeric_cols
+        self.categorical_cols = categorical_cols
+        self.p = p
+
+    def numeric_distance(self, x, y):
+        totalDistance = 0
+
+        for col in self.numeric_cols:
+            diff = abs(x[col] - y[col])
+            totalDistance += diff ** self.p
+        return totalDistance ** (1 / self.p)#optionally take square root
+
+    def categorical_distance(self, x, y):
+        totalDistance = 0
+
+        for col in self.categorical_cols:
+            if x[col] != y[col]:
+                totalDistance += 1
+        return totalDistance
+
+    def distance(self, x, y):
+        num = self.numeric_distance(x, y)
+        cat = self.categorical_distance(x, y)
+        return num + cat
+
 
 
 columns = [
@@ -92,13 +122,20 @@ cat_cols = ['Sex']
 preprocessor = Preprocessor(num_cols, cat_cols)
 
 D_train_processed = preprocessor.fit_transform(D_train)
-D_test_processed = preprocessor.fit_transform(D_test)
+D_test_processed = preprocessor.transform(D_test)
 
 #so now data is preprocessed with numeric data falling between 0-1
 print(D_train_processed.head())
 
+x = D_train_processed.iloc[0]
+y = D_train_processed.iloc[1]
+
+calculator = DistanceCalculator(num_cols, cat_cols)
 
 
+print("Numeric distance: ", calculator.numeric_distance(x, y))
+print("Categorical distance: ", calculator.categorical_distance(x, y))
+print("Total distance: ", calculator.distance(x, y))
 
 columns = [
     'buying',
