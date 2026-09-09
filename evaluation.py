@@ -1,26 +1,11 @@
 """
-evaluation.py -- experiment harness for CSCI 447 Project 1.
-
-This module contains no machine learning. It is the plumbing that runs models
-and collects numbers: data splitting, cross-validation, metrics, hyperparameter
-tuning, and the statistical test used to compare two algorithms.
-
-Everything is numpy/pandas only -- no sklearn -- so there is no question about
-whether we leaned on a library the assignment wanted us to implement ourselves.
 
 MODEL INTERFACE
 ---------------
-Any model passed in here must look like:
 
     model.fit(X_train, y_train)     # X: DataFrame, y: Series
     model.predict(X_test)           # -> sequence of predictions, len == len(X_test)
-
-Models are supplied as a *factory* (a zero-argument function returning a fresh
-model), not as an instance, because every fold needs an untrained model. Passing
-one instance around would let fold 2 predict with data it saw in fold 1.
-
-TYPICAL USE
------------
+    
     from evaluation import (holdout_split, five_by_two_cv, grid_search,
                             classification_error, mean_squared_error)
 
