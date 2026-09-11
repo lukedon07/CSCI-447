@@ -99,7 +99,7 @@ class NullRegressor:
         return [self.prediction] * len(D)
 
 
-RegressorModel = NullClassifier()
+RegressorModel = NullRegressor()
 RegressorModel.fit(g_train)
 RegressorPredictions = RegressorModel.predict(D_test)
 

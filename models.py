@@ -57,7 +57,7 @@ class Preprocessor:
 
 
 class DistanceCalculator:
-    def __init__(self, numeric_cols, categorical_cols, p=2):
+    def __init__(self, numeric_cols, categorical_cols, p=2):#never set p to zero please
         self.numeric_cols = numeric_cols
         self.categorical_cols = categorical_cols
         self.p = p
@@ -68,7 +68,7 @@ class DistanceCalculator:
         for col in self.numeric_cols:
             diff = abs(x[col] - y[col])
             totalDistance += diff ** self.p
-        return totalDistance ** (1 / self.p)#optionally take square root
+        return totalDistance ** (1 / self.p)#take pth root
 
     def categorical_distance(self, x, y):
         totalDistance = 0
