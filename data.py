@@ -9,7 +9,7 @@ class DatasetConfig:
     target: str
     numeric_features: list[str]
     categorical_features: list[str] = field(default_factory=list)
-    cyclic_features: dict[str,int] = field(default_factory=dict)
+    cyclic_features: dict[str, int] = field(default_factory=dict)
     drop_features: list[str] = field(default_factory=list)
     target_log_transform: bool = False
 
@@ -82,7 +82,6 @@ DATASETS = {
             "Visceral weight",
             "Shell weight",
         ],
-        # Sex is discarded because the assignment explicitly permits this.
         drop_features=["Sex"],
     ),
 
@@ -97,7 +96,6 @@ DATASETS = {
             "CHMIN",
             "CHMAX",
         ],
-        # Vendor, model, and ERP are not useful predictor features.
         drop_features=["vendor", "model", "ERP"],
     ),
 
@@ -116,28 +114,37 @@ DATASETS = {
             "wind",
             "rain",
         ],
-        categorical_features=[],
         cyclic_features={
             "month": 12,
             "day": 7,
         },
         target_log_transform=True,
-    )
+    ),
 }
 
 
 def load_dataset(name, data_dir="datasets"):
-    #load a dataset
-    #returns
-    #X: predictor
-    #y: target
-    #config
+    """
+    Load one of the six assignment datasets.
+
+    Returns
+    -------
+    X : pandas.DataFrame
+        Predictor features.
+    y : pandas.Series
+        Target.
+    config : DatasetConfig
+        Dataset-specific feature and transformation configuration.
+    """
 
     if name not in DATASETS:
-        raise ValueError(f"Unknown dataset: '{name}' .")
+        raise ValueError(f"Unknown dataset: '{name}'.")
 
     config = DATASETS[name]
 
+    # ------------------------------------------------------------------
+    # Breast Cancer
+    # ------------------------------------------------------------------
     if name == "breast_cancer":
         columns = [
             "Sample Code Number",
@@ -153,9 +160,22 @@ def load_dataset(name, data_dir="datasets"):
             "class",
         ]
 
-        df = pd.read_csv(f"{data_dir}/breast-cancer-wisconsin.data", names=columns)
+        df = pd.read_csv(
+            f"{data_dir}/breast-cancer-wisconsin.data",
+            names=columns,
+            na_values=["?"],
+        )
+
+        # The assignment permits dropping examples with missing features.
         df = df.dropna().reset_index(drop=True)
 
+        # Bare Nuclei is a numeric/ordinal feature.
+        for col in config.numeric_features:
+            df[col] = pd.to_numeric(df[col], errors="raise")
+
+    # ------------------------------------------------------------------
+    # Car Evaluation
+    # ------------------------------------------------------------------
     elif name == "car":
         columns = [
             "buying",
@@ -172,6 +192,9 @@ def load_dataset(name, data_dir="datasets"):
             names=columns,
         )
 
+    # ------------------------------------------------------------------
+    # Congressional Voting
+    # ------------------------------------------------------------------
     elif name == "votes":
         columns = [
             "class",
@@ -193,11 +216,16 @@ def load_dataset(name, data_dir="datasets"):
             "export-administration-act-south-africa",
         ]
 
+        # IMPORTANT:
+        # "?" means abstain and is therefore a legitimate categorical value.
         df = pd.read_csv(
             f"{data_dir}/house-votes-84.data",
             names=columns,
         )
 
+    # ------------------------------------------------------------------
+    # Abalone
+    # ------------------------------------------------------------------
     elif name == "abalone":
         columns = [
             "Sex",
@@ -216,6 +244,9 @@ def load_dataset(name, data_dir="datasets"):
             names=columns,
         )
 
+    # ------------------------------------------------------------------
+    # Computer Hardware
+    # ------------------------------------------------------------------
     elif name == "computer_hardware":
         columns = [
             "vendor",
@@ -235,6 +266,9 @@ def load_dataset(name, data_dir="datasets"):
             names=columns,
         )
 
+    # ------------------------------------------------------------------
+    # Forest Fires
+    # ------------------------------------------------------------------
     elif name == "forest_fires":
         columns = [
             "X",
@@ -258,11 +292,19 @@ def load_dataset(name, data_dir="datasets"):
             skiprows=1,
         )
 
-        # Convert month/day to numeric cycle positions.
         month_map = {
-            "jan": 1, "feb": 2, "mar": 3, "apr": 4,
-            "may": 5, "jun": 6, "jul": 7, "aug": 8,
-            "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+            "jan": 1,
+            "feb": 2,
+            "mar": 3,
+            "apr": 4,
+            "may": 5,
+            "jun": 6,
+            "jul": 7,
+            "aug": 8,
+            "sep": 9,
+            "oct": 10,
+            "nov": 11,
+            "dec": 12,
         }
 
         day_map = {
@@ -275,22 +317,71 @@ def load_dataset(name, data_dir="datasets"):
             "sat": 7,
         }
 
-        df["month"] = df["month"].str.lower().map(month_map)
-        df["day"] = df["day"].str.lower().map(day_map)
+        df["month"] = (
+            df["month"]
+            .astype(str)
+            .str.lower()
+            .map(month_map)
+        )
+
+        df["day"] = (
+            df["day"]
+            .astype(str)
+            .str.lower()
+            .map(day_map)
+        )
+
+        if df["month"].isna().any() or df["day"].isna().any():
+            raise ValueError("Invalid month/day value found in Forest Fires data.")
 
     else:
         raise RuntimeError("Dataset loader is missing.")
 
+    # ------------------------------------------------------------------
+    # Validate configured columns.
+    # ------------------------------------------------------------------
+    feature_columns = (
+        config.numeric_features
+        + config.categorical_features
+        + list(config.cyclic_features.keys())
+    )
 
+    missing_features = [
+        col for col in feature_columns
+        if col not in df.columns
+    ]
+
+    if missing_features:
+        raise ValueError(
+            f"Dataset '{name}' is missing configured features: "
+            f"{missing_features}"
+        )
+
+    # Convert configured numeric features explicitly.
+    for col in config.numeric_features:
+        df[col] = pd.to_numeric(df[col], errors="raise")
+
+    for col in config.cyclic_features:
+        df[col] = pd.to_numeric(df[col], errors="raise")
+
+    # Drop explicitly unwanted columns.
     columns_to_drop = [
         col for col in config.drop_features
         if col in df.columns
     ]
 
-    X = df.drop(columns=[config.target] + columns_to_drop)
-    y = df[config.target]
+    X = df.drop(
+        columns=[config.target] + columns_to_drop
+    ).copy()
 
+    y = df[config.target].copy()
+
+    # Forest Fires follows the assignment's recommended log transform.
     if config.target_log_transform:
         y = np.log1p(y.astype(float))
 
-    return X.reset_index(drop=True), y.reset_index(drop=True), config
+    return (
+        X.reset_index(drop=True),
+        y.reset_index(drop=True),
+        config,
+    )

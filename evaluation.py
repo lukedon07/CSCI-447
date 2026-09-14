@@ -381,16 +381,33 @@ def five_by_two_cv_t_test(scores_a, scores_b):
     if len(a) != 10 or len(b) != 10:
         raise ValueError("5x2cv t-test needs exactly 10 scores from each algorithm")
 
-    diffs = (a - b).reshape(5, 2)          # rows = repetitions, cols = the 2 folds
-    means = diffs.mean(axis=1, keepdims=True)
-    variances = ((diffs - means) ** 2).sum(axis=1)   # per-repetition variance
+    diffs = (a - b).reshape(5, 2)
 
-    denom = np.sqrt(variances.mean())
+    # For each repetition, calculate the mean difference between
+    # the two train/test folds.
+    rep_means = diffs.mean(axis=1)
+
+    # Dietterich's 5x2cv variance estimate:
+    #
+    # s_i^2 = (d_i1 - mean_i)^2 + (d_i2 - mean_i)^2
+    #
+    # There are only two observations per repetition, so this is
+    # equivalent to the sample variance because n - 1 = 1.
+    rep_variances = (
+            (diffs[:, 0] - rep_means) ** 2
+            + (diffs[:, 1] - rep_means) ** 2
+    )
+
+    # Average the five repetition-specific variance estimates.
+    variance_estimate = np.mean(rep_variances)
+
+    denom = np.sqrt(variance_estimate)
+
     if denom == 0:
         t_stat = 0.0
     else:
-        # Numerator is the first difference specifically -- that is the statistic
-        # as Dietterich defines it, not the overall mean.
+        # Dietterich uses the first fold of the first repetition
+        # as the numerator.
         t_stat = float(diffs[0, 0] / denom)
 
     result = {
