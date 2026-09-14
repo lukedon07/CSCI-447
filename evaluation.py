@@ -217,10 +217,13 @@ def five_by_two_folds(X, y, stratify=False, seed=808):
 class CVResult:
     """the ten fold scores plus the summary stats for the writeup."""
 
-    def __init__(self, scores, metric_name="score", label=None):
+    def __init__(self, scores, metric_name="score", label=None, stats=None):
         self.scores = list(scores)
         self.metric_name = metric_name
         self.label = label
+        # anything extra pulled off each fitted model, one value per fold.
+        # used for the edited/condensed reduction ratios.
+        self.stats = list(stats) if stats else []
 
     @property
     def mean(self):
@@ -230,6 +233,17 @@ class CVResult:
     def std(self):
         # ddof=1, ten folds is a sample not the whole population
         return float(np.std(self.scores, ddof=1))
+
+    @property
+    def stat_mean(self):
+        """average of whatever per_fold_stat collected, None if nothing was."""
+        clean = [s for s in self.stats if s is not None]
+        return float(np.mean(clean)) if clean else None
+
+    @property
+    def stat_std(self):
+        clean = [s for s in self.stats if s is not None]
+        return float(np.std(clean, ddof=1)) if len(clean) > 1 else None
 
     def as_dict(self):
         return {
@@ -246,7 +260,7 @@ class CVResult:
 
 
 def five_by_two_cv(model_factory, X, y, metric, stratify=False, seed=808,
-                   label=None, verbose=False):
+                   label=None, verbose=False, per_fold_stat=None):
     """
     runs the 5x2 and gives back a CVResult.
 
@@ -258,9 +272,14 @@ def five_by_two_cv(model_factory, X, y, metric, stratify=False, seed=808,
     stratify      : True for classification, False for regression.
     seed          : same seed means same folds, so runs are comparable and
                     reproduce later.
+    per_fold_stat : optional function(fitted_model) -> number, called after
+                    each fold. the models get thrown away otherwise, so this
+                    is the only chance to grab anything off them. used for
+                    the edited/condensed reduction ratio.
     """
     X, y = _as_frame_series(X, y)
     scores = []
+    stats = []
 
     for rep, fold, train_idx, test_idx in five_by_two_folds(X, y, stratify, seed):
         model = model_factory()
@@ -270,12 +289,20 @@ def five_by_two_cv(model_factory, X, y, metric, stratify=False, seed=808,
         score = metric(y.iloc[test_idx].values, preds)
         scores.append(score)
 
+        if per_fold_stat is not None:
+            try:
+                stats.append(per_fold_stat(model))
+            except Exception:
+                # a model that doesn't support the stat just gets nothing,
+                # no reason to kill the whole run over it
+                stats.append(None)
+
         if verbose:
             print(f"  rep {rep + 1} fold {fold + 1}: "
                   f"train={len(train_idx)} test={len(test_idx)} score={score:.4f}")
 
     metric_name = getattr(metric, "__name__", "score")
-    return CVResult(scores, metric_name=metric_name, label=label)
+    return CVResult(scores, metric_name=metric_name, label=label, stats=stats)
 
 
 # ---------------------------------------------------------------------------

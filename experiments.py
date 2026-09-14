@@ -22,6 +22,23 @@ from evaluation import(
     epsilon_error
 )
 
+def reduction_stat(model):
+    """
+    Pull the reduction ratio off a fitted edited/condensed model.
+
+    reduction_ratio is a @property on the edited/condensed classes, giving the
+    fraction of training examples REMOVED, so 0.65 means the reduced set is
+    35% the size of the original. Plain KNN and the null models don't have it
+    at all, they just return None.
+    """
+    value = getattr(model, "reduction_ratio", None)
+    # it's a property, so this is already the number. tolerate a plain method
+    # too in case anyone changes it later.
+    if callable(value):
+        value = value()
+    return float(value) if value is not None else None
+
+
 def make_classifier(config, **params):
     return KNNClassifier(
         **params,
@@ -304,6 +321,7 @@ def run_classification_models(dataset_name, config, X_eval, y_eval, params):
             stratify=True,
             seed=808,
             label=model_name,
+            per_fold_stat=reduction_stat,
         )
 
         results.append(result)
@@ -372,6 +390,7 @@ def run_regression_models(
             stratify=False,
             seed=808,
             label=model_name,
+            per_fold_stat=reduction_stat,
         )
 
         results.append(result)
@@ -414,6 +433,14 @@ def results_to_rows(
 
         if epsilon is not None:
             row["epsilon"] = epsilon
+
+        # fraction of training data thrown away by editing/condensing.
+        # None for null and plain KNN, they don't reduce anything.
+        row["reduction_ratio"] = result.stat_mean
+        row["reduction_ratio_std"] = result.stat_std
+        row["fraction_retained"] = (
+            None if result.stat_mean is None else 1.0 - result.stat_mean
+        )
 
         rows.append(row)
 
