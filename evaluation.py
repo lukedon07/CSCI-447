@@ -36,30 +36,29 @@ except ImportError:  # scipy is optional; we just lose p-values without it
 # ---------------------------------------------------------------------------
 # Metrics
 # ---------------------------------------------------------------------------
-# Every metric is "lower is better" so the tuning code can always minimize and
-# never has to ask which direction it is supposed to go.
+# all of these are lower-is-better so the tuning code can just minimize
 
 def classification_error(y_true, y_pred):
-    """Fraction of predictions that are wrong. 0.0 is perfect, 1.0 is hopeless."""
+    """fraction of predictions that are wrong. 0 = perfect."""
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
     return float(np.mean(y_true != y_pred))
 
 
 def accuracy(y_true, y_pred):
-    """Fraction correct. Convenience for the report; do not tune on this."""
+    """fraction correct. just for the writeup, don't tune on this one."""
     return 1.0 - classification_error(y_true, y_pred)
 
 
 def mean_squared_error(y_true, y_pred):
-    """Average squared difference. The regression metric the assignment asks for."""
+    """average squared error. the regression metric the assignment asks for."""
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
     return float(np.mean((y_true - y_pred) ** 2))
 
 
 def root_mean_squared_error(y_true, y_pred):
-    """MSE back in the units of the target. Easier to talk about in the paper."""
+    """same thing but back in the target's units, easier to talk about."""
     return float(np.sqrt(mean_squared_error(y_true, y_pred)))
 
 
@@ -71,18 +70,16 @@ def mean_absolute_error(y_true, y_pred):
 
 def epsilon_error(epsilon):
     """
-    Build a regression metric that behaves like classification error.
+    makes a regression metric that acts like classification error.
 
-    A regression prediction has no notion of "correct" -- predicting 9.3 when the
-    truth is 9.4 is not wrong in any useful sense. Edited and condensed kNN need a
-    keep-or-drop rule, so we declare a prediction correct when it lands within
-    epsilon of the true value, and this returns the fraction that do not.
+    there's no such thing as a "correct" regression prediction, 9.3 vs 9.4
+    isn't really wrong. but edited/condensed need some keep-or-drop rule, so
+    count it correct if it's within epsilon. returns the fraction that aren't.
 
-    Returns a function (y_true, y_pred) -> error rate, so it drops into
-    five_by_two_cv and grid_search anywhere a metric is expected.
+    gives back a function, so it plugs into five_by_two_cv and grid_search
+    wherever a metric goes:
 
         metric = epsilon_error(0.5)
-        metric(y_true, y_pred)
     """
     def _metric(y_true, y_pred):
         y_true = np.asarray(y_true, dtype=float)
@@ -98,7 +95,7 @@ def epsilon_error(epsilon):
 # ---------------------------------------------------------------------------
 
 def _as_frame_series(X, y):
-    """Accept numpy arrays or pandas objects, always hand back pandas."""
+    """takes numpy or pandas, always hands back pandas."""
     if not isinstance(X, pd.DataFrame):
         X = pd.DataFrame(X)
     if not isinstance(y, pd.Series):
@@ -110,13 +107,13 @@ def _as_frame_series(X, y):
 
 def stratified_half_indices(y, rng):
     """
-    Split row positions into two halves that preserve class proportions.
+    splits into two halves while keeping the class proportions the same.
 
-    Congressional votes is roughly 61/39. An unlucky shuffle that piles most of
-    one class into a single half makes the resulting scores meaningless, so for
-    classification we split each class separately and then recombine.
+    votes is about 61/39, so a bad shuffle could dump most of one class into
+    one half and the scores would be garbage. splitting each class separately
+    and recombining avoids that.
 
-    Returns (first_half, second_half) as integer position arrays.
+    returns (first_half, second_half) as index arrays.
     """
     y = np.asarray(y)
     first, second = [], []
@@ -125,8 +122,8 @@ def stratified_half_indices(y, rng):
         idx = np.flatnonzero(y == cls)
         rng.shuffle(idx)
         cut = len(idx) // 2
-        # Odd class counts alternate which half gets the spare row, so neither
-        # half systematically ends up larger.
+        # odd counts, flip a coin for who gets the extra row so one half
+        # doesn't always end up bigger
         if len(idx) % 2 == 1 and rng.random() < 0.5:
             cut += 1
         first.append(idx[:cut])
@@ -140,7 +137,7 @@ def stratified_half_indices(y, rng):
 
 
 def random_half_indices(n, rng):
-    """Plain shuffled 50/50 split of n row positions. Used for regression."""
+    """plain shuffled 50/50 split. used for the regression sets."""
     idx = np.arange(n)
     rng.shuffle(idx)
     cut = n // 2
@@ -149,16 +146,15 @@ def random_half_indices(n, rng):
 
 def holdout_split(X, y, frac=0.2, stratify=False, seed=808):
     """
-    Pull a tuning slice off the front of the data.
+    pulls off a chunk of data to tune on.
 
-    Hyperparameters (k, p, gamma, epsilon) get chosen on the slice this returns
-    first; 5x2 cross-validation then runs on the remainder. Tuning on data you
-    later test against inflates your results, and it is the single easiest way to
-    accidentally report numbers that are not real.
+    k, p, gamma and epsilon all get picked on the tuning slice, then the 5x2
+    runs on whatever's left. if we tune on data we later test against the
+    results come out looking better than they are.
 
-    Call this ONCE per dataset, at the very top of the experiment.
+    call this once per dataset, at the top.
 
-    Returns (X_tune, y_tune, X_eval, y_eval).
+    returns (X_tune, y_tune, X_eval, y_eval).
     """
     X, y = _as_frame_series(X, y)
     rng = np.random.default_rng(seed)
@@ -166,7 +162,7 @@ def holdout_split(X, y, frac=0.2, stratify=False, seed=808):
     n_tune = int(round(n * frac))
 
     if stratify:
-        # Take `frac` of each class rather than `frac` of the whole set.
+        # take frac of each class instead of frac of the whole thing
         tune_idx = []
         for cls in np.unique(y.values):
             idx = np.flatnonzero(y.values == cls)
@@ -188,25 +184,25 @@ def holdout_split(X, y, frac=0.2, stratify=False, seed=808):
 
 def five_by_two_folds(X, y, stratify=False, seed=808):
     """
-    Generate the ten (train, test) index pairs of 5x2 cross-validation.
+    makes the ten (train, test) index pairs for 5x2 cross validation.
 
-    Five times: shuffle, cut the data in half, train on A and test on B, then
-    train on B and test on A. Ten scores come out.
+    five times: shuffle, cut in half, train on A test on B, then train on B
+    test on A. ten scores total.
 
-    We use this rather than 10-fold because each half is a genuinely independent
-    training set, which is what the 5x2cv paired t-test needs in order to say one
-    algorithm beat another rather than got lucky on a split.
+    using this instead of 10-fold because each half is an independent training
+    set, which is what the paired t-test needs to tell a real difference from
+    a lucky split.
 
-    Splits depend only on `seed`, so two different algorithms called with the same
-    seed see byte-identical folds -- which is required for the paired test.
+    splits only depend on the seed, so two algorithms with the same seed get
+    the exact same folds. the paired test breaks otherwise.
 
-    Yields (repetition, fold, train_idx, test_idx).
+    yields (repetition, fold, train_idx, test_idx).
     """
     X, y = _as_frame_series(X, y)
 
     for rep in range(5):
-        # Derive each repetition's rng from the base seed so repetitions differ
-        # but the whole sequence stays reproducible.
+        # each rep gets its own rng off the base seed, so the reps differ but
+        # the whole thing still reproduces
         rng = np.random.default_rng(seed + rep * 1000)
 
         if stratify:
@@ -219,7 +215,7 @@ def five_by_two_folds(X, y, stratify=False, seed=808):
 
 
 class CVResult:
-    """Ten fold scores plus the summary statistics the report needs."""
+    """the ten fold scores plus the summary stats for the writeup."""
 
     def __init__(self, scores, metric_name="score", label=None):
         self.scores = list(scores)
@@ -232,7 +228,7 @@ class CVResult:
 
     @property
     def std(self):
-        # ddof=1: these ten folds are a sample, not the whole population.
+        # ddof=1, ten folds is a sample not the whole population
         return float(np.std(self.scores, ddof=1))
 
     def as_dict(self):
@@ -252,16 +248,16 @@ class CVResult:
 def five_by_two_cv(model_factory, X, y, metric, stratify=False, seed=808,
                    label=None, verbose=False):
     """
-    Run 5x2 cross-validation and return a CVResult.
+    runs the 5x2 and gives back a CVResult.
 
-    model_factory : zero-argument callable returning a FRESH untrained model.
-                    Pass `lambda: KNNClassifier(k=5)`, not `KNNClassifier(k=5)` --
-                    a single instance reused across folds would carry training
-                    data from one fold into the next.
-    metric        : callable (y_true, y_pred) -> float, lower is better.
+    model_factory : function that returns a NEW untrained model, so
+                    lambda: KNNClassifier(k=5) and not KNNClassifier(k=5).
+                    reusing one instance would drag fold 1's training data
+                    into fold 2.
+    metric        : (y_true, y_pred) -> float, lower is better.
     stratify      : True for classification, False for regression.
-    seed          : same seed => same folds, so results are comparable across
-                    algorithms and reproducible for the paper.
+    seed          : same seed means same folds, so runs are comparable and
+                    reproduce later.
     """
     X, y = _as_frame_series(X, y)
     scores = []
@@ -297,7 +293,7 @@ class TuningResult:
 
 
 def expand_grid(param_grid):
-    """{'k': [1, 3], 'p': [1, 2]} -> four dicts, one per combination."""
+    """{'k': [1, 3], 'p': [1, 2]} turns into four dicts, one per combo."""
     keys = list(param_grid.keys())
     return [dict(zip(keys, values)) for values in product(*(param_grid[k] for k in keys))]
 
@@ -305,20 +301,20 @@ def expand_grid(param_grid):
 def grid_search(model_factory_from_params, param_grid, X, y, metric,
                 stratify=False, seed=808, n_repeats=2, verbose=False):
     """
-    Try every parameter combination and return the one with the lowest score.
+    tries every parameter combo and returns whichever scored lowest.
 
-    Run this on the TUNING SLICE ONLY -- the X_tune/y_tune that holdout_split
-    returned. Never on the evaluation data.
+    only run this on the tuning slice from holdout_split, never on the
+    evaluation data.
 
-    model_factory_from_params : callable taking a params dict, returning a model.
-                                e.g. lambda p: KNNClassifier(**p)
-    param_grid : dict of name -> list of values, e.g. {"k": [1,3,5], "p": [1,2]}
-    n_repeats  : how many of the 5 repetitions to use while tuning. 2 is usually
-                 enough and keeps tuning from dominating your runtime; bump it to
-                 5 if a dataset's scores look unstable.
+    model_factory_from_params : function taking a params dict and returning a
+                                model, like lambda p: KNNClassifier(**p)
+    param_grid : name -> list of values, like {"k": [1,3,5], "p": [1,2]}
+    n_repeats  : how many of the 5 reps to use while tuning. 2 is usually fine
+                 and keeps tuning from taking forever. bump to 5 if a dataset
+                 looks unstable.
 
-    The .table attribute holds every combination and its score, which is what you
-    want for the "how we tuned k" plot the assignment asks for.
+    .table has every combo and its score, which is what the k-tuning plots
+    come from.
     """
     X, y = _as_frame_series(X, y)
     combos = expand_grid(param_grid)
@@ -347,7 +343,7 @@ def grid_search(model_factory_from_params, param_grid, X, y, metric,
     best = table.iloc[0]
     best_params = {k: best[k] for k in param_grid.keys()}
 
-    # pandas hands back numpy scalars; convert so downstream code sees plain ints
+    # pandas gives back numpy scalars, convert so the models get plain ints
     for k, v in best_params.items():
         if isinstance(v, (np.integer,)):
             best_params[k] = int(v)
@@ -365,15 +361,15 @@ def five_by_two_cv_t_test(scores_a, scores_b):
     """
     Dietterich's 5x2cv paired t-test.
 
-    Answers: is algorithm A's advantage over B real, or is it split-to-split
-    noise? This is the test 5x2 CV exists to enable, and it is what lets the
-    paper say "significantly better" instead of "a bit better."
+    tells us whether A actually beat B or just got lucky on the splits. this
+    is the whole reason for doing 5x2 in the first place, and it's what lets
+    the paper say "significantly better" instead of just "better".
 
-    Both score lists must come from five_by_two_cv calls with the SAME seed and
-    the same stratify setting, so the folds line up pairwise.
+    both score lists have to come from five_by_two_cv with the same seed and
+    same stratify setting, otherwise the folds don't line up pairwise.
 
-    Returns a dict with the t statistic, degrees of freedom (always 5), the
-    p-value if scipy is available, and the mean difference.
+    returns the t statistic, df (always 5), the p-value if scipy is around,
+    and the mean difference.
     """
     a = np.asarray(scores_a, dtype=float)
     b = np.asarray(scores_b, dtype=float)
@@ -424,7 +420,7 @@ def five_by_two_cv_t_test(scores_a, scores_b):
 
 
 def compare(result_a, result_b, alpha=0.05):
-    """Human-readable wrapper around the t-test, for printing while you work."""
+    """readable version of the t-test output, handy for printing while working."""
     test = five_by_two_cv_t_test(result_a.scores, result_b.scores)
     name_a = result_a.label or "A"
     name_b = result_b.label or "B"
@@ -446,10 +442,10 @@ def compare(result_a, result_b, alpha=0.05):
 
 def results_table(results):
     """
-    Turn a list of CVResult objects into a DataFrame ready for the paper.
+    turns a list of CVResults into a DataFrame for the paper.
 
-    Has .to_latex(), which saves retyping ten numbers into the JMLR template
-    and getting one of them wrong.
+    it has .to_latex() so the numbers don't have to get retyped into the
+    template by hand.
     """
     rows = []
     for r in results:
@@ -465,7 +461,7 @@ def results_table(results):
 
 
 # ---------------------------------------------------------------------------
-# Self-test: python evaluation.py
+# quick self-test, just run: python evaluation.py
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":

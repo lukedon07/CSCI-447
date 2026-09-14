@@ -102,22 +102,21 @@ class KNNClassifier:
             p=self.p,
         )
 
+        # turn the training set into numpy arrays once so neighbor search
+        # isn't going back through pandas for every single comparison
+        self.distance_calculator.fit_reference(self.X_train)
+
         return self
 
     def nearest_neighbors(self, x):
-        distances = []
+        # one array op instead of looping over every training row
+        distances = self.distance_calculator.distances_to_reference(x)
 
-        for i in range(len(self.X_train)):
-            distance = self.distance_calculator.distance(
-                x,
-                self.X_train.iloc[i],
-            )
+        # stable sort so ties break on the lower index, same as what sorting
+        # the (distance, index) pairs used to do
+        order = np.argsort(distances, kind="stable")[:self.k]
 
-            distances.append((distance, i))
-
-        distances.sort(key=lambda pair: pair[0])
-
-        return distances[:self.k]
+        return [(float(distances[i]), int(i)) for i in order]
 
     def predict(self, X):
         if self.X_train is None:
@@ -259,22 +258,21 @@ class KNNRegressor:
             p=self.p,
         )
 
+        # turn the training set into numpy arrays once so neighbor search
+        # isn't going back through pandas for every single comparison
+        self.distance_calculator.fit_reference(self.X_train)
+
         return self
 
     def nearest_neighbors(self, x):
-        distances = []
+        # one array op instead of looping over every training row
+        distances = self.distance_calculator.distances_to_reference(x)
 
-        for i in range(len(self.X_train)):
-            distance = self.distance_calculator.distance(
-                x,
-                self.X_train.iloc[i],
-            )
+        # stable sort so ties break on the lower index, same as what sorting
+        # the (distance, index) pairs used to do
+        order = np.argsort(distances, kind="stable")[:self.k]
 
-            distances.append((distance, i))
-
-        distances.sort(key=lambda pair: pair[0])
-
-        return distances[:self.k]
+        return [(float(distances[i]), int(i)) for i in order]
 
     def predict(self, X):
         if self.X_train is None:
@@ -385,28 +383,24 @@ class EditedKNNClassifier:
             p=self.p,
         )
 
+        # set up the matrix once, then the loop below compares each point to
+        # every other one in a single array op instead of an inner loop
+        self.distance_calculator.fit_reference(X_processed)
+
+        n_examples = len(X_processed)
         keep_indices = []
 
-        for i in range(len(X_processed)):
-            best_distance = float("inf")
-            nearest_index = None
-
-            for j in range(len(X_processed)):
-                if i == j:
-                    continue
-
-                distance = self.distance_calculator.distance(
-                    X_processed.iloc[i],
-                    X_processed.iloc[j],
-                )
-
-                if distance < best_distance:
-                    best_distance = distance
-                    nearest_index = j
-
-            if nearest_index is None:
+        for i in range(n_examples):
+            if n_examples < 2:
                 keep_indices.append(i)
                 continue
+
+            distances = self.distance_calculator.distances_from_reference_row(i)
+            distances[i] = np.inf   # don't let a point be its own neighbor
+
+            # argmin takes the first minimum, which matches the old strict
+            # "<" check keeping the lowest index on ties
+            nearest_index = int(np.argmin(distances))
 
             if self.y_train[nearest_index] == self.y_train[i]:
                 keep_indices.append(i)
@@ -532,28 +526,24 @@ class EditedKNNRegressor:
             p=self.p,
         )
 
+        # set up the matrix once, then the loop below compares each point to
+        # every other one in a single array op instead of an inner loop
+        self.distance_calculator.fit_reference(X_processed)
+
+        n_examples = len(X_processed)
         keep_indices = []
 
-        for i in range(len(X_processed)):
-            best_distance = float("inf")
-            nearest_index = None
-
-            for j in range(len(X_processed)):
-                if i == j:
-                    continue
-
-                distance = self.distance_calculator.distance(
-                    X_processed.iloc[i],
-                    X_processed.iloc[j],
-                )
-
-                if distance < best_distance:
-                    best_distance = distance
-                    nearest_index = j
-
-            if nearest_index is None:
+        for i in range(n_examples):
+            if n_examples < 2:
                 keep_indices.append(i)
                 continue
+
+            distances = self.distance_calculator.distances_from_reference_row(i)
+            distances[i] = np.inf   # don't let a point be its own neighbor
+
+            # argmin takes the first minimum, which matches the old strict
+            # "<" check keeping the lowest index on ties
+            nearest_index = int(np.argmin(distances))
 
             prediction = self.y_train[nearest_index]
 

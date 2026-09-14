@@ -287,7 +287,7 @@ def load_dataset(name, data_dir="datasets"):
         ]
 
         df = pd.read_csv(
-            f"{data_dir}/forestfires.csv",
+            f"{data_dir}/forestfires.data",
             names=columns,
             skiprows=1,
         )
