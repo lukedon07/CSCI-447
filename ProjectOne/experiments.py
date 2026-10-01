@@ -1,9 +1,8 @@
 # KNN must return one prediction per input row.
-import os
 import pandas as pd
 from pathlib import Path
 from data import load_dataset
-from models import (
+from ProjectOne.models import (
     NullClassifier,
     NullRegressor,
     KNNClassifier,

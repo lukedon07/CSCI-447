@@ -509,7 +509,7 @@ if __name__ == "__main__":
     print("=" * 62)
     print("Classification: car evaluation, null model")
     print("=" * 62)
-    car = pd.read_csv("datasets/car.data",
+    car = pd.read_csv("../datasets/car.data",
                       names=["buying", "maint", "doors", "persons",
                              "lug_boot", "safety", "class"])
     Xc, yc = car.drop("class", axis=1), car["class"]
@@ -528,7 +528,7 @@ if __name__ == "__main__":
     print("=" * 62)
     print("Regression: abalone, null model")
     print("=" * 62)
-    ab = pd.read_csv("datasets/abalone.data",
+    ab = pd.read_csv("../datasets/abalone.data",
                      names=["Sex", "Length", "Diameter", "Height", "Whole weight",
                             "Shucked weight", "Visceral weight", "Shell weight", "Rings"])
     Xa, ya = ab.drop("Rings", axis=1), ab["Rings"]

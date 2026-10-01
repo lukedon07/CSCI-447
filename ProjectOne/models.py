@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 
-from preprocessing import Preprocessor, DistanceCalculator
+from ProjectOne.preprocessing import Preprocessor, DistanceCalculator
 
 
 class KNNClassifier:
