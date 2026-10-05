@@ -63,7 +63,7 @@ def load_dataset(name, d):
         return _build("machine", "regression", df, "PRP", ["vendor"],
                       ["MYCT", "MMIN", "MMAX", "CACH", "CHMIN", "CHMAX"])
     if name == "forest":
-        df = pd.read_csv(p("forestfires.csv"))
+        df = pd.read_csv(p("forestfires.data"))
         num = ["X", "Y", "FFMC", "DMC", "DC", "ISI", "temp", "RH", "wind", "rain"]
         # area is heavily skewed with many zeros -> ln(area + 1), as the data's authors suggest
         return _build("forest", "regression", df, "area", ["month", "day"], num,
