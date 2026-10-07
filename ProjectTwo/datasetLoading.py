@@ -46,7 +46,13 @@ def load_dataset(name, d):
         df = pd.read_csv(p("car.data"), header=None, names=cols, dtype=str)
         return _build("car", "classification", df, "class", cols[:-1], [])
     if name == "vote":
-        cols = ["party"] + [f"v{i}" for i in range(1, 17)]
+        cols = ["party", "handicapped-infants", "water-project-cost-sharing",
+                "adoption-of-the-budget-resolution", "physician-fee-freeze",
+                "el-salvador-aid", "religious-groups-in-schools",
+                "anti-satellite-test-ban", "aid-to-nicaraguan-contras", "mx-missile",
+                "immigration", "synfuels-corporation-cutback", "education-spending",
+                "superfund-right-to-sue", "crime", "duty-free-exports",
+                "export-administration-act-south-africa"]
         df = pd.read_csv(p("house-votes-84.data"), header=None, names=cols, dtype=str)
         # '?' means "did not vote yes/no"; kept as its own categorical value
         return _build("vote", "classification", df, "party", cols[1:], [])
