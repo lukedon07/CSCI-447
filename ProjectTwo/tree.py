@@ -94,8 +94,8 @@ class DecisionTree:
         R = tot - L
         nl = (pos + 1).astype(float)
         nr = n - nl
-        H = _entropy_rows(tot[None, :])[0]
-        gain = H - (nl / n) * _entropy_rows(L) - (nr / n) * _entropy_rows(R)
+        H = entropyRows(tot[None, :])[0]
+        gain = H - (nl / n) * entropyRows(L) - (nr / n) * entropyRows(R)
         wl, wr = nl / n, nr / n
         iv = -(wl * np.log2(wl) + wr * np.log2(wr))
         ok = (gain > self.EPS) & (iv > self.EPS)
@@ -224,8 +224,8 @@ class DecisionTree:
     def print_tree(self, class_names=None, node=None, depth=0, max_depth=6):
         node = node or self.root
         pad = "  " * depth
-        pred = (class_names[node.pred] if class_names is not None and
-                                          self.task == "classification" else f"{node.pred:.3g}")
+        pred = (class_names[node.predictions] if class_names is not None and
+                                          self.task == "classification" else f"{node.predictions:.3g}")
         if node.is_leaf or depth >= max_depth:
             print(f"{pad}-> {pred}  (n={node.n})")
             return
@@ -249,14 +249,14 @@ class Node:
     def __init__(self, predictions,n):
         self.predictions = predictions
         self.n = n
-        self.features = None
+        self.feat = None
         self.numeric = False
-        self.threshold = False
+        self.thr = None
         self.children = None
 
     @property
     def is_leaf(self):
-        return self.features is None
+        return self.feat is None
 
     def child_nodes(self):
         if self.is_leaf:
