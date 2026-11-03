@@ -15,7 +15,7 @@ so the paired statistical tests compare models on identical folds.
 """
 import numpy as np
 
-DEFAULT_SEED = 42
+DEFAULT_SEED = 808
 
 
 def five_by_two_splits(y, task, n_reps=5, seed=DEFAULT_SEED):

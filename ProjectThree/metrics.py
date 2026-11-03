@@ -1,46 +1,54 @@
-"""5x2 cross-validation splits.
+"""Evaluation metrics. All functions take plain label / value arrays.
 
-Five repetitions; in each one the data is shuffled and cut into two halves A
-and B. Fold 1 trains on A and tests on B, fold 2 trains on B and tests on A,
-giving 10 (train, test) pairs. Classification splits are stratified, so every
-class is divided as evenly as possible between the two halves.
-
-The splits depend only on the labels, the task and the seed, so the same call
-always returns the same folds. Every model must use the same call (same seed)
-so the paired statistical tests compare models on identical folds.
-
-    splits = five_by_two_splits(y, task)
-    for i, (train_idx, test_idx) in enumerate(splits):
-        rep, fold = divmod(i, 2)
+For regression, convert predictions back to the original target units first
+(y_pred * std + mean) so RMSE is reported in meaningful units.
 """
 import numpy as np
 
-DEFAULT_SEED = 42
+
+def accuracy(y_true, y_pred):
+    return float(np.mean(np.asarray(y_true) == np.asarray(y_pred)))
 
 
-def five_by_two_splits(y, task, n_reps=5, seed=DEFAULT_SEED):
-    y = np.asarray(y)
-    n = len(y)
-    if n < 2:
-        raise ValueError("Need at least 2 samples to split")
-    if task not in ("classification", "regression"):
-        raise ValueError("task must be 'classification' or 'regression'")
+def macro_f1(y_true, y_pred, n_classes):
+    """Unweighted mean of per-class F1, over classes that occur in y_true or y_pred."""
+    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)
+    scores = []
+    for c in range(n_classes):
+        tp = np.sum((y_true == c) & (y_pred == c))
+        fp = np.sum((y_true != c) & (y_pred == c))
+        fn = np.sum((y_true == c) & (y_pred != c))
+        if tp + fp + fn == 0:
+            continue                      # class absent from both -> not counted
+        scores.append(2 * tp / (2 * tp + fp + fn))
+    return float(np.mean(scores))
 
-    rng = np.random.default_rng(seed)
-    if task == "classification":
-        groups = [np.where(y == c)[0] for c in np.unique(y)]
-    else:
-        groups = [np.arange(n)]
 
-    splits = []
-    for _ in range(n_reps):
-        half = np.zeros(n, dtype=int)
-        for idx in groups:
-            idx = rng.permutation(idx)
-            # alternate A/B down the shuffled class; a random start spreads the
-            # odd leftover samples across the two halves
-            half[idx] = (np.arange(len(idx)) + rng.integers(2)) % 2
-        a, b = np.where(half == 0)[0], np.where(half == 1)[0]
-        splits.append((a, b))
-        splits.append((b, a))
-    return splits
+def mse(y_true, y_pred):
+    d = np.asarray(y_true, dtype=float).ravel() - np.asarray(y_pred, dtype=float).ravel()
+    return float(np.mean(d ** 2))
+
+
+def rmse(y_true, y_pred):
+    return float(np.sqrt(mse(y_true, y_pred)))
+
+
+def r2(y_true, y_pred):
+    """1 - SS_res / SS_tot. Returns 0.0 if y_true is constant."""
+    y_true = np.asarray(y_true, dtype=float).ravel()
+    y_pred = np.asarray(y_pred, dtype=float).ravel()
+    ss_tot = np.sum((y_true - y_true.mean()) ** 2)
+    if ss_tot == 0:
+        return 0.0
+    return float(1.0 - np.sum((y_true - y_pred) ** 2) / ss_tot)
+
+
+def classification_metrics(y_true, y_pred, n_classes):
+    acc = accuracy(y_true, y_pred)
+    return {"error": 1.0 - acc, "accuracy": acc,
+            "macro_f1": macro_f1(y_true, y_pred, n_classes)}
+
+
+def regression_metrics(y_true, y_pred):
+    return {"error": rmse(y_true, y_pred), "mse": mse(y_true, y_pred),
+            "rmse": rmse(y_true, y_pred), "r2": r2(y_true, y_pred)}
