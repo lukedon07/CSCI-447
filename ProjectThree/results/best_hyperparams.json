@@ -1,0 +1,272 @@
+{
+  "breast_cancer": {
+    "linear": {
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 87,
+      "batch_size": 32
+    },
+    "ff2": {
+      "lr": 0.03,
+      "momentum": 0.9,
+      "activation": "sigmoid",
+      "hidden": [
+        5,
+        8
+      ],
+      "epochs": 100,
+      "batch_size": 32
+    },
+    "ae_finetune": {
+      "encoder": 5,
+      "hidden2": 4,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 51,
+      "batch_size": 32
+    },
+    "ae_frozen": {
+      "encoder": 5,
+      "hidden2": 8,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 17,
+      "batch_size": 32
+    }
+  },
+  "car": {
+    "linear": {
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 88,
+      "batch_size": 32
+    },
+    "ff2": {
+      "lr": 0.03,
+      "momentum": 0.9,
+      "activation": "tanh",
+      "hidden": [
+        5,
+        16
+      ],
+      "epochs": 85,
+      "batch_size": 32
+    },
+    "ae_finetune": {
+      "encoder": 5,
+      "hidden2": 16,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 65,
+      "batch_size": 32
+    },
+    "ae_frozen": {
+      "encoder": 5,
+      "hidden2": 16,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 98,
+      "batch_size": 32
+    }
+  },
+  "votes": {
+    "linear": {
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 11,
+      "batch_size": 32
+    },
+    "ff2": {
+      "lr": 0.03,
+      "momentum": 0.9,
+      "activation": "tanh",
+      "hidden": [
+        36,
+        4
+      ],
+      "epochs": 23,
+      "batch_size": 32
+    },
+    "ae_finetune": {
+      "encoder": 12,
+      "hidden2": 16,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.01,
+      "momentum": 0.9,
+      "epochs": 30,
+      "batch_size": 32
+    },
+    "ae_frozen": {
+      "encoder": 36,
+      "hidden2": 16,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 18,
+      "batch_size": 32
+    }
+  },
+  "abalone": {
+    "linear": {
+      "lr": 0.01,
+      "momentum": 0.9,
+      "epochs": 65,
+      "batch_size": 32
+    },
+    "ff2": {
+      "lr": 0.003,
+      "momentum": 0.9,
+      "activation": "tanh",
+      "hidden": [
+        8,
+        8
+      ],
+      "epochs": 94,
+      "batch_size": 32
+    },
+    "ae_finetune": {
+      "encoder": 8,
+      "hidden2": 4,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 78,
+      "batch_size": 32
+    },
+    "ae_frozen": {
+      "encoder": 8,
+      "hidden2": 16,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 81,
+      "batch_size": 32
+    }
+  },
+  "hardware": {
+    "linear": {
+      "lr": 0.03,
+      "momentum": 0.0,
+      "epochs": 28,
+      "batch_size": 32
+    },
+    "ff2": {
+      "lr": 0.03,
+      "momentum": 0.9,
+      "activation": "sigmoid",
+      "hidden": [
+        3,
+        8
+      ],
+      "epochs": 81,
+      "batch_size": 32
+    },
+    "ae_finetune": {
+      "encoder": 5,
+      "hidden2": 4,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 34,
+      "batch_size": 32
+    },
+    "ae_frozen": {
+      "encoder": 3,
+      "hidden2": 8,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.03,
+      "momentum": 0.9,
+      "epochs": 43,
+      "batch_size": 32
+    }
+  },
+  "forest_fires": {
+    "linear": {
+      "lr": 0.03,
+      "momentum": 0.0,
+      "epochs": 81,
+      "batch_size": 32
+    },
+    "ff2": {
+      "lr": 0.03,
+      "momentum": 0.9,
+      "activation": "sigmoid",
+      "hidden": [
+        15,
+        8
+      ],
+      "epochs": 31,
+      "batch_size": 32
+    },
+    "ae_finetune": {
+      "encoder": 8,
+      "hidden2": 16,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.01,
+      "momentum": 0.9,
+      "epochs": 10,
+      "batch_size": 32
+    },
+    "ae_frozen": {
+      "encoder": 8,
+      "hidden2": 16,
+      "activation": "tanh",
+      "ae_lr": 0.01,
+      "ae_momentum": 0.9,
+      "ae_epochs": 100,
+      "ae_batch_size": 32,
+      "lr": 0.01,
+      "momentum": 0.9,
+      "epochs": 45,
+      "batch_size": 32
+    }
+  }
+}

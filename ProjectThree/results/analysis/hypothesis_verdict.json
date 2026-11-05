@@ -1,0 +1,14 @@
+{
+  "H1a": false,
+  "H1b": true,
+  "H1c": false,
+  "n_compressible": 4,
+  "n_compressible_significant": 0,
+  "n_incompressible": 2,
+  "n_incompressible_significant": 0,
+  "spearman_rho": -0.08571428571428572,
+  "spearman_p_one_sided": 0.5986111111111111,
+  "alpha": 0.05,
+  "rho_threshold": 0.83,
+  "verdict": "refuted"
+}

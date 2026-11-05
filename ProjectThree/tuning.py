@@ -77,7 +77,7 @@ def sample_configs(model, d, n_trials=N_TRIALS, seed=cv.DEFAULT_SEED):
         raise ValueError(f"d={d} is too small for an autoencoder grid (needs e < d)")
     combos = list(itertools.product(LR_GRID, MOMENTUM_GRID, ACTIVATION_GRID,
                                     range(len(widths)), range(len(H2_GRID))))
-    rng = np.random.default_rng(seed)  # same seed -> same picks for every model
+    rng = np.random.default_rng(seed)               # same seed -> same picks for every model
     picks = rng.choice(len(combos), size=min(n_trials, len(combos)), replace=False)
 
     configs = []
@@ -194,7 +194,7 @@ def run_tuning(datasets=None, models=TUNABLE_MODELS, out_dir=RESULTS_DIR, **kwar
     out_dir.mkdir(parents=True, exist_ok=True)
     log = pd.concat(logs, ignore_index=True)
     log.to_csv(out_dir / "tuning_log.csv", index=False)
-    with open(out_dir / "best_hyperparams.json", "w") as f:
+    with open(out_dir / "best_hyperparams.json", "w", encoding="utf-8") as f:
         json.dump(all_best, f, indent=2)
     return all_best, log
 

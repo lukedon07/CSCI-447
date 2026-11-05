@@ -74,7 +74,7 @@ def _hp_for(hyperparams, dataset, model):
 def load_hyperparams(path):
     """Read the JSON written by tuning.py -> {dataset: {model: hp}}."""
     import json
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     for models in data.values():
         for hp in models.values():
